@@ -1,0 +1,2 @@
+C:\Users\samer.boules\Documents\GitHub\HololensConNXTSample\obj\Debug\Assembly-CSharp-Editor.csprojAssemblyReference.cache
+C:\Users\samer.boules\Documents\GitHub\HololensConNXTSample\obj\Debug\Assembly-CSharp-Editor.csproj.CoreCompileInputs.cache
