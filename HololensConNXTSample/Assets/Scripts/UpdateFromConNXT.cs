@@ -16,13 +16,18 @@ public class UpdateFromConNXT : MonoBehaviour {
 
 
     //EndPoint to get the token
-    private string tokenEndPoint = "https://beta.connxt.eu/connect/token";
+    private string tokenEndPoint = "https://portal.connxt.eu/connect/token";
     //EndPoint to get the devices
-    private string devicesEndPoint = "https://beta.connxt.eu/api/Devices";
+    private string devicesEndPoint = "https://portal.connxt.eu/api/Devices";
     //ConNXT credential
-    private string clientID = "52840b9f-23db-475d-a920-272217be4402";
-    private string clientSecret = "ZTXMI5Em/676HmLL0WUQUQ==";
+    //private string clientID = "52840b9f-23db-475d-a920-272217be4402";
+    //private string clientSecret = "ZTXMI5Em/676HmLL0WUQUQ==";
+    private string clientID = "78bd1614-0d71-40fa-a504-5d20b0bffa65";
+    private string clientSecret = "Y6GUh5Ce+YgirJt2zkyVSA==";
     private int timer = 0;
+
+    private int nofCLRT = 0;
+    private int isCountingCLRT = 1;
 
     // Structure to hold the data for each RUUVI tag
     public struct RuuviTag
@@ -50,7 +55,7 @@ public class UpdateFromConNXT : MonoBehaviour {
     //Token that will be recieved from ConNXT
     private string token;
 
-    JArray devices;
+    public JArray devices;
     private string telemetryEndPoint;
 
     /*******************************************************************
@@ -159,75 +164,83 @@ public class UpdateFromConNXT : MonoBehaviour {
         Ruuvis = new RuuviTag[devices.Count];
 
         DebuggingInfoText.text = "Number of active devices on ConNXT: " + devices.Count.ToString() + "\nUpdating data, please wait..." ;
+
         timer = 0;
 
         //Step 3: Loop over all devices and read the telemetry data (GET request)
         int localindex = 0;
 
-        //foreach (JObject device in devices)
         for(localindex = 0; localindex < devices.Count; localindex++)
         {
             string deviceId = devices[localindex]["deviceUid"].Value<string>();
+            
             DebuggingInfoText.text = "Number of active devices on ConNXT: " + devices.Count.ToString() + "\nUpdating Device " + localindex.ToString() + ", please wait...";
 
             Ruuvis[localindex]._deviceID = deviceId;
-
-            WWWForm telemetryForm = new WWWForm();
-            //Add Fields for POST Request
-            telemetryForm.AddField("grant_type", "client_credentials");
-            telemetryForm.AddField("client_id", clientID);
-            telemetryForm.AddField("client_secret", clientSecret);
-            telemetryForm.AddField("scope", "devices:telemetry devices:get");
-
-            Dictionary<string, string> TelemetryHeaders = telemetryForm.headers;
-            TelemetryHeaders["Authorization"] = "Bearer " + token;
-            telemetryEndPoint = $"https://beta.connxt.eu/api/Telemetry/{deviceId}/latest";
-            WWW TelemetryRequest = new WWW(telemetryEndPoint, null, TelemetryHeaders);
-
-            //Wait until TelemetryRequest retuns
-            yield return TelemetryRequest;
-
-            // Retrieve the telemetry for the device
-            string telemetryString = TelemetryRequest.text;
-            if (!string.IsNullOrEmpty(telemetryString))
+            if (deviceId[0] == 'C' && deviceId[1] == 'L' && deviceId[2] == 'R')//CoLab devices deviceID always start with 'CLR'
             {
-                // Loop over the telemetry values
-                JObject telemetry = JObject.Parse(telemetryString);
-
-                //Update timestamp in structure
-                Ruuvis[localindex]._timeStamp = telemetry["messageTimeStamp"].ToString();
-
-                foreach (JObject dataPoint in telemetry["dataPoints"] as JArray)
+                if(isCountingCLRT==1)//Are we counting the number of CLRT?
                 {
-                    //Fill the structure with the updated data
-                    if (dataPoint["key"].ToString() == "AccelerationX")
+                    nofCLRT++;
+                }
+                WWWForm telemetryForm = new WWWForm();
+                //Add Fields for POST Request
+                telemetryForm.AddField("grant_type", "client_credentials");
+                telemetryForm.AddField("client_id", clientID);
+                telemetryForm.AddField("client_secret", clientSecret);
+                telemetryForm.AddField("scope", "devices:telemetry devices:get");
+
+                Dictionary<string, string> TelemetryHeaders = telemetryForm.headers;
+                TelemetryHeaders["Authorization"] = "Bearer " + token;
+                telemetryEndPoint = $"https://portal.connxt.eu/api/Telemetry/{deviceId}/latest";
+                WWW TelemetryRequest = new WWW(telemetryEndPoint, null, TelemetryHeaders);
+
+                //Wait until TelemetryRequest retuns
+                yield return TelemetryRequest;
+
+                // Retrieve the telemetry for the device
+                string telemetryString = TelemetryRequest.text;
+                if (!string.IsNullOrEmpty(telemetryString))
+                {
+                    // Loop over the telemetry values
+                    JObject telemetry = JObject.Parse(telemetryString);
+
+                    //Update timestamp in structure
+                    Ruuvis[localindex]._timeStamp = telemetry["messageTimeStamp"].ToString();
+
+                    foreach (JObject dataPoint in telemetry["dataPoints"] as JArray)
                     {
-                        Ruuvis[localindex]._accelerationX = dataPoint["value"].ToString();
-                    }
-                    else if (dataPoint["key"].ToString() == "AccelerationY")
-                    {
-                        Ruuvis[localindex]._accelerationY = dataPoint["value"].ToString();
-                    }
-                    else if (dataPoint["key"].ToString() == "AccelerationZ")
-                    {
-                        Ruuvis[localindex]._accelerationZ = dataPoint["value"].ToString();
-                    }
-                    else if (dataPoint["key"].ToString() == "Temperature")
-                    {
-                        Ruuvis[localindex]._temperature = dataPoint["value"].ToString();
-                    }
-                    else if (dataPoint["key"].ToString() == "Pressure")
-                    {
-                        Ruuvis[localindex]._pressure = dataPoint["value"].ToString();
-                    }
-                    else if (dataPoint["key"].ToString() == "Humidity")
-                    {
-                        Ruuvis[localindex]._humidity = dataPoint["value"].ToString();
+                        //Fill the structure with the updated data
+                        if (dataPoint["key"].ToString() == "AccelerationX")
+                        {
+                            Ruuvis[localindex]._accelerationX = dataPoint["value"].ToString();
+                        }
+                        else if (dataPoint["key"].ToString() == "AccelerationY")
+                        {
+                            Ruuvis[localindex]._accelerationY = dataPoint["value"].ToString();
+                        }
+                        else if (dataPoint["key"].ToString() == "AccelerationZ")
+                        {
+                            Ruuvis[localindex]._accelerationZ = dataPoint["value"].ToString();
+                        }
+                        else if (dataPoint["key"].ToString() == "Temperature")
+                        {
+                            Ruuvis[localindex]._temperature = dataPoint["value"].ToString();
+                        }
+                        else if (dataPoint["key"].ToString() == "Pressure")
+                        {
+                            Ruuvis[localindex]._pressure = dataPoint["value"].ToString();
+                        }
+                        else if (dataPoint["key"].ToString() == "Humidity")
+                        {
+                            Ruuvis[localindex]._humidity = dataPoint["value"].ToString();
+                        }
                     }
                 }
             }
-        }   
-        DebuggingInfoText.text = "Update Complete.\nLast update was at: " + Ruuvis[Ruuvis.Length-1]._timeStamp;
+        }
+        isCountingCLRT = 0;//Stop counting CLRT after first loop
+        DebuggingInfoText.text = "Update Complete.\nNumber of Ruuvis: " + nofCLRT.ToString() + ".\nLast update was at: " + Ruuvis[Ruuvis.Length-2]._timeStamp;
     }
 
     /*******************************************************************
@@ -238,7 +251,7 @@ public class UpdateFromConNXT : MonoBehaviour {
     *
     * INPUTS :
     *       PARAMETERS:
-    *           uri     string               The target webpage uri example: "https://beta.connxt.eu"
+    *           uri     string               The target webpage uri example: "https://portal.connxt.eu"
     *       GLOBALS :
     *           None
     *                   
@@ -327,7 +340,7 @@ public class UpdateFromConNXT : MonoBehaviour {
     */
     void UpdateData()
     {
-        StartCoroutine(GetRequest("https://beta.connxt.eu"));
+        StartCoroutine(GetRequest("https://portal.connxt.eu"));
     }
 
 

@@ -35,10 +35,9 @@ public class UpdateUI : MonoBehaviour
     #endregion
 
     public float currentTemperature;
-    int NUMBER_OF_RUUVIS = 12;
+    int NOfconnxtDevices;
 
     int currentRuuviDisplayed = 1;
-
 
     #region My Functions
     //Switch to next Ruuvi Data
@@ -48,34 +47,47 @@ public class UpdateUI : MonoBehaviour
     }
 
     //Private function that takes the number of Ruuvi you want to display and update the UI texts accordingly
-    //RuuviID range: from 1 to 12 (Don't send in 0 because this is the Raspberry Pi gateway which has no telemetry
     private void SetTextsToRuuviID(int RuuviID)
     {
-        if (RuuviID == 0 || currentRuuviDisplayed==0 || RuuviID > NUMBER_OF_RUUVIS || currentRuuviDisplayed > NUMBER_OF_RUUVIS)
-        {
-            RuuviID = 1;
-            currentRuuviDisplayed = 1;
-        }
-            UpdateFromConNXT _UpdateFromConNXT = gameObject.GetComponent<UpdateFromConNXT>();
+        UpdateFromConNXT _UpdateFromConNXT = gameObject.GetComponent<UpdateFromConNXT>();
         if (_UpdateFromConNXT.Ruuvis != null)
         {
-            //Update the text fields on the gui
-            RUUVINameText.text = "CoLab RUUVI Tag 00" + RuuviID.ToString() + "\nDeviceID: " + _UpdateFromConNXT.Ruuvis[RuuviID]._deviceID;
-            TemperatureTitleText.text = "Temperature";
-            currentTemperature = float.Parse(_UpdateFromConNXT.Ruuvis[RuuviID]._temperature, System.Globalization.CultureInfo.InvariantCulture);
+            if (_UpdateFromConNXT.Ruuvis[RuuviID]._temperature!=null)
+            {
+                //Update the text fields on the gui
+                RUUVINameText.text = "Device Index: " + RuuviID.ToString() + "\nDeviceID: " + _UpdateFromConNXT.Ruuvis[RuuviID]._deviceID;
+                TemperatureTitleText.text = "Temperature";
+                currentTemperature = float.Parse(_UpdateFromConNXT.Ruuvis[RuuviID]._temperature, System.Globalization.CultureInfo.InvariantCulture);
 
-            TemperatureText.text = _UpdateFromConNXT.Ruuvis[RuuviID]._temperature + " °C";
-            HumidityTitleText.text = "Humidity";
-            HumidityText.text = _UpdateFromConNXT.Ruuvis[RuuviID]._humidity + " %";
-            PressureTitleText.text = "Pressure";
-            PressureText.text = _UpdateFromConNXT.Ruuvis[RuuviID]._pressure + " hPa";
-            AccelXTitleText.text = "Acceleration X";
-            AccelXText.text = _UpdateFromConNXT.Ruuvis[RuuviID]._accelerationX + " m/s2";
-            AccelYTitleText.text = "Acceleration Y";
-            AccelYText.text = _UpdateFromConNXT.Ruuvis[RuuviID]._accelerationY + " m/s2";
-            AccelZTitleText.text = "Acceleration Z";
-            AccelZText.text = _UpdateFromConNXT.Ruuvis[RuuviID]._accelerationZ + " m/s2"; ;
-            LastUpdatedText.text = "Last updated on " + _UpdateFromConNXT.Ruuvis[RuuviID]._timeStamp;
+                TemperatureText.text = _UpdateFromConNXT.Ruuvis[RuuviID]._temperature + " °C";
+                HumidityTitleText.text = "Humidity";
+                HumidityText.text = _UpdateFromConNXT.Ruuvis[RuuviID]._humidity + " %";
+                PressureTitleText.text = "Pressure";
+                PressureText.text = _UpdateFromConNXT.Ruuvis[RuuviID]._pressure + " hPa";
+                AccelXTitleText.text = "Acceleration X";
+                AccelXText.text = _UpdateFromConNXT.Ruuvis[RuuviID]._accelerationX + " m/s2";
+                AccelYTitleText.text = "Acceleration Y";
+                AccelYText.text = _UpdateFromConNXT.Ruuvis[RuuviID]._accelerationY + " m/s2";
+                AccelZTitleText.text = "Acceleration Z";
+                AccelZText.text = _UpdateFromConNXT.Ruuvis[RuuviID]._accelerationZ + " m/s2"; ;
+                LastUpdatedText.text = "Last updated on " + _UpdateFromConNXT.Ruuvis[RuuviID]._timeStamp;
+            }
+            else
+            {
+                TemperatureTitleText.text = "";
+                TemperatureText.text = "";
+                HumidityTitleText.text = "";
+                HumidityText.text = "";
+                PressureTitleText.text = "";
+                PressureText.text = "";
+                AccelXTitleText.text = "";
+                AccelXText.text = "";
+                AccelYTitleText.text = "";
+                AccelYText.text = "";
+                AccelZTitleText.text = "";
+                AccelZText.text = "";
+                LastUpdatedText.text = "Not a CoLab device!";
+            }
         }
     }
 
@@ -83,8 +95,12 @@ public class UpdateUI : MonoBehaviour
     //Designed to be called on certain controller button or action (example: tab the touchpad)
     public void SetTextsToNextRuuvi()
     {
-            currentRuuviDisplayed = currentRuuviDisplayed + 1;
-            SetTextsToRuuviID(currentRuuviDisplayed);         
+        currentRuuviDisplayed = currentRuuviDisplayed + 1;        
+        if (currentRuuviDisplayed > 16)
+        {
+            currentRuuviDisplayed = 0;
+        }
+        SetTextsToRuuviID(currentRuuviDisplayed);
     }
 
 
@@ -101,8 +117,8 @@ public class UpdateUI : MonoBehaviour
 #region Unity Functions
     void Start()
     {
-        SetTextsToRuuviID(currentRuuviDisplayed);
-        InvokeRepeating("UpdateMenu", 0f, 10f);
+        SetTextsToRuuviID(0);
+        InvokeRepeating("UpdateMenu", 0f, 2f);
     }
 
     void Update()
